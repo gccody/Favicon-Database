@@ -28,6 +28,13 @@ export class FaviconScraper {
         return htmlFavicon;
       }
 
+      const parsedUrl = new URL(url);
+      const hostnameParts = parsedUrl.hostname.split(".")
+      if (hostnameParts.length > 2) {
+        parsedUrl.hostname = hostnameParts.slice(-2).join(".");
+        return await this.getFavicon(parsedUrl.toString());
+      }
+
       return null;
     } catch (error) {
       console.error('Error fetching favicon:', error);
@@ -42,11 +49,7 @@ export class FaviconScraper {
     try {
       const parsedUrl = new URL(url);
       // Extract root domain by taking the last two parts (may not work for all TLDs)
-      const hostnameParts = parsedUrl.hostname.split('.');
-      if (hostnameParts.length > 2) {
-        parsedUrl.hostname = hostnameParts.slice(-2).join('.');
-      }
-      const faviconUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}/favicon.ico`;
+      let faviconUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}/favicon.ico`;
       
       const response = await axios.get(faviconUrl, {
         timeout: 5000,

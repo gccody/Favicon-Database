@@ -73,7 +73,13 @@ export default {
         const imageResponse = await fetch(faviconResult.url);
         if (!imageResponse.ok) {
           await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(null), { expirationTtl: 3600 });
-          return new Response('Failed to download favicon', { status: 500 });
+          return new Response(defaultSvg, {
+            status: 404,
+            headers: {
+              'Content-Type': 'image/svg+xml',
+              'Cache-Control': 'public, max-age=3600' // 1 hour
+            }
+          });
         }
 
         const imageData = await imageResponse.arrayBuffer();
@@ -106,10 +112,22 @@ export default {
 
       } catch (error) {
         console.error('Error:', error);
-        return new Response('Internal server error', { status: 500 });
+        return new Response(defaultSvg, {
+          status: 404,
+          headers: {
+            'Content-Type': 'image/svg+xml',
+            'Cache-Control': 'public, max-age=3600' // 1 hour
+          }
+        });
       }
     }
 
-    return new Response('Not found', { status: 404 });
+    return new Response(defaultSvg, {
+      status: 404,
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=3600' // 1 hour
+      }
+    });
   }
 };

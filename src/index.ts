@@ -70,7 +70,15 @@ export default {
         }
 
         // Download the image
-        const imageResponse = await fetch(faviconResult.url);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        const imageResponse = await fetch(faviconResult.url, {
+          signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
         if (!imageResponse.ok) {
           await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(null), { expirationTtl: 3600 });
           return new Response(defaultSvg, {

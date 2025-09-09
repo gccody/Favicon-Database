@@ -44,22 +44,22 @@ export default {
       }
 
       // If cached is explicitly null (previously marked as not found), return default SVG
-      if (cached === null) {
-        return new Response(defaultSvg, {
-          status: 404,
-          headers: {
-            'Content-Type': 'image/svg+xml',
-            'Cache-Control': 'public, max-age=3600' // 1 hour
-          }
-        });
-      }
+      // if (cached === null) {
+      //   return new Response(defaultSvg, {
+      //     status: 404,
+      //     headers: {
+      //       'Content-Type': 'image/svg+xml',
+      //       'Cache-Control': 'public, max-age=60' // 1 hour
+      //     }
+      //   });
+      // }
 
       try {
         // Get favicon URL
         const faviconResult = await FaviconFetcher.getFavicon(targetUrl);
 
         if (!faviconResult) {
-          await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(null), { expirationTtl: 3600 }); // Cache null for 1 hour
+          // await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(null), { expirationTtl: 3600 }); // Cache null for 1 hour
           return new Response(defaultSvg, {
             status: 404,
             headers: {

@@ -2,13 +2,5 @@ name = "favicon-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
-[[kv_namespaces]]
-binding = "FAVICON_CACHE"
-id = "1044d6600cf942ee85fc6218fa604795"
-
-[[r2_buckets]]
-binding = "FAVICON_BUCKET"
-bucket_name = "favicon-database"
-
 [observability.logs]
 enabled = true

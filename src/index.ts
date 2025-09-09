@@ -2,13 +2,7 @@
 
 import { FaviconFetcher } from './faviconFetcher';
 interface Env {
-  FAVICON_CACHE: KVNamespace;
-  FAVICON_BUCKET: R2Bucket;
-}
-
-interface CachedFavicon {
-  r2Key: string;
-  contentType: string;
+  // No longer need KV or R2
 }
 
 const defaultSvg = `<svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -26,116 +20,45 @@ export default {
         return new Response('Missing url parameter', { status: 400 });
       }
 
-      // Check KV cache
-      const cacheKey = `favicon:${targetUrl}`;
-      const cached = await env.FAVICON_CACHE.get(cacheKey, 'json') as CachedFavicon | null;
-
-      if (cached) {
-        // Serve from R2
-        const object = await env.FAVICON_BUCKET.get(cached.r2Key);
-        if (object) {
-          return new Response(object.body, {
-            headers: {
-              'Content-Type': cached.contentType,
-              'Cache-Control': 'public, max-age=86400' // 24 hours
-            }
-          });
-        }
-      }
-
-      // If cached is explicitly null (previously marked as not found), return default SVG
-      // if (cached === null) {
-      //   return new Response(defaultSvg, {
-      //     status: 404,
-      //     headers: {
-      //       'Content-Type': 'image/svg+xml',
-      //       'Cache-Control': 'public, max-age=60' // 1 hour
-      //     }
-      //   });
-      // }
-
       try {
         // Get favicon URL
         const faviconResult = await FaviconFetcher.getFavicon(targetUrl);
 
         if (!faviconResult) {
-          // await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(null), { expirationTtl: 3600 }); // Cache null for 1 hour
-          return new Response(defaultSvg, {
-            status: 404,
-            headers: {
-              'Content-Type': 'image/svg+xml',
-              'Cache-Control': 'public, max-age=3600' // 1 hour
-            }
-          });
-        }
-
-        // Download the image
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-
-        const imageResponse = await fetch(faviconResult.url, {
-          signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!imageResponse.ok) {
-          await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(null), { expirationTtl: 3600 });
-          return new Response(defaultSvg, {
-            status: 404,
-            headers: {
-              'Content-Type': 'image/svg+xml',
-              'Cache-Control': 'public, max-age=3600' // 1 hour
-            }
-          });
-        }
-
-        const imageData = await imageResponse.arrayBuffer();
-        const contentType = imageResponse.headers.get('content-type') || 'image/x-icon';
-
-        // Generate R2 key
-        const r2Key = `favicon-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-        // Store in R2
-        await env.FAVICON_BUCKET.put(r2Key, imageData, {
-          httpMetadata: {
-            contentType
+          // Redirect to not found SVG
+          return new Response(null, {
+          status: 302,
+          headers: {
+            'Location': `${url.origin}/notfound.svg`,
+            'Cache-Control': 'public, max-age=86400', // Cache the redirect for 24 hours
           }
         });
+        }
 
-        // Cache metadata in KV
-        const cacheData: CachedFavicon = {
-          r2Key,
-          contentType
-        };
-        await env.FAVICON_CACHE.put(cacheKey, JSON.stringify(cacheData), { expirationTtl: 86400 }); // 24 hours
-
-        // Serve the image
-        return new Response(imageData, {
+        // Redirect to the discovered favicon URL with cache headers
+        return new Response(null, {
+          status: 302,
           headers: {
-            'Content-Type': contentType,
-            'Cache-Control': 'public, max-age=86400'
+            'Location': faviconResult.url,
+            'Cache-Control': 'public, max-age=86400', // Cache the redirect for 24 hours
           }
         });
 
       } catch (error) {
         console.error('Error:', error);
-        return new Response(defaultSvg, {
-          status: 404,
-          headers: {
-            'Content-Type': 'image/svg+xml',
-            'Cache-Control': 'public, max-age=3600' // 1 hour
-          }
-        });
+        return Response.redirect(`${url.origin}/notfound.svg`, 302);
       }
     }
 
-    return new Response(defaultSvg, {
-      status: 404,
-      headers: {
-        'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=3600' // 1 hour
-      }
-    });
+    if (url.pathname === '/notfound.svg') {
+      return new Response(defaultSvg, {
+        headers: {
+          'Content-Type': 'image/svg+xml',
+          'Cache-Control': 'public, max-age=86400' // 24 hours
+        }
+      });
+    }
+
+    return new Response('Not found', { status: 404 });
   }
 };

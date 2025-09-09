@@ -7,6 +7,10 @@ export interface FaviconResult {
 export class FaviconFetcher {
   static async getFavicon(url: string): Promise<FaviconResult | null> {
     try {
+      const parsedUrl = new URL(url);
+      if (this.isLocalIP(parsedUrl.hostname)) {
+        return this.getDefaultFavicon();
+      }
       // Try direct favicon.ico first
       const directFavicon = await this.tryDirectFavicon(url);
       if (directFavicon) {
@@ -19,7 +23,6 @@ export class FaviconFetcher {
         return htmlFavicon;
       }
 
-      const parsedUrl = new URL(url);
       const hostnameParts = parsedUrl.hostname.split('.');
       if (hostnameParts.length > 2) {
         parsedUrl.hostname = hostnameParts.slice(-2).join('.');
@@ -114,5 +117,46 @@ export class FaviconFetcher {
     } catch (error) {
       return href;
     }
+  }
+
+  private static isLocalIP(hostname: string): boolean {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') {
+      return true;
+    }
+
+    // Check if valid IPv4
+    const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!ipv4Match) {
+      return false;
+    }
+
+    const [_, a, b, c, d] = ipv4Match.map(Number);
+    if (a > 255 || b > 255 || c > 255 || d > 255 || a < 0 || b < 0 || c < 0 || d < 0) {
+      return false;
+    }
+
+    // Private IPv4 ranges
+    if (a === 10 || a === 127) {
+      return true;
+    }
+    if (a === 172 && b >= 16 && b <= 31) {
+      return true;
+    }
+    if (a === 192 && b === 168) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private static getDefaultFavicon(): FaviconResult {
+    const svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="#0078d4"/><text x="8" y="11" font-family="Arial" font-size="10" fill="white" text-anchor="middle" dominant-baseline="middle">?</text></svg>`;
+    const base64Svg = Buffer.from(svgContent).toString('base64');
+    const dataUrl = `data:image/svg+xml;base64,${base64Svg}`;
+    return {
+      url: dataUrl,
+      type: 'image/svg+xml',
+      source: 'direct'
+    };
   }
 }

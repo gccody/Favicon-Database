@@ -11,16 +11,8 @@
   "license": "ISC",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250906.0",
-    "@types/axios": "^0.9.36",
-    "@types/cheerio": "^0.22.35",
     "@types/node": "^24.3.0",
     "typescript": "^5.9.2",
     "wrangler": "^4.34.0"
-  },
-  "dependencies": {
-    "@types/express": "^5.0.3",
-    "axios": "^1.11.0",
-    "cheerio": "^1.1.2",
-    "express": "^5.1.0"
   }
 }

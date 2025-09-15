@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20250906.0",
-    "@types/node": "^24.3.0",
+    "@cloudflare/workers-types": "^4.20250913.0",
+    "@types/node": "^24.4.0",
     "typescript": "^5.9.2",
-    "wrangler": "^4.34.0"
+    "wrangler": "^4.37.0"
   }
 }

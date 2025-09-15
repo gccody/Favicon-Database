@@ -2,13 +2,9 @@
   "name": "favicon-scraper",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/faviconScraper.js",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/server.js",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "deploy": "wrangler deploy"
   },
   "keywords": [],
   "author": "",

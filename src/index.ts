@@ -27,7 +27,7 @@ export default {
           status: 302,
           headers: {
             'Location': `${url.origin}/notfound.svg`,
-            'Cache-Control': 'public, max-age=86400', // Cache the redirect for 24 hours
+            'Cache-Control': 'public, max-age=1,209,600', // Cache the redirect for 14 days
           }
         });
         }
@@ -37,7 +37,7 @@ export default {
           status: 302,
           headers: {
             'Location': faviconResult.url,
-            'Cache-Control': 'public, max-age=86400', // Cache the redirect for 24 hours
+            'Cache-Control': 'public, max-age=31,536,000', // Cache the redirect for 365 days
           }
         });
 
@@ -51,7 +51,7 @@ export default {
       return new Response(defaultSvg, {
         headers: {
           'Content-Type': 'image/svg+xml',
-          'Cache-Control': 'public, max-age=86400' // 24 hours
+          'Cache-Control': 'public, max-age=31,536,000' // 365 days
         }
       });
     }

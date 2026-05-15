@@ -89,16 +89,15 @@ export class FaviconFetcher {
       const parsedUrl = new URL(url);
 
       const relPatterns = [
-        /rel=["'](?:shortcut )?icon["']/i,
-        /rel=["']apple-touch-icon["']/i,
-        /rel=["']apple-touch-icon-precomposed["']/i,
+        /rel=["'][^"']*\bicon\b[^"']*["']/i,
+        /rel=["'][^"']*\bapple-touch-icon\b[^"']*["']/i,
+        /rel=["'][^"']*\bapple-touch-icon-precomposed\b[^"']*["']/i,
       ];
 
       for (const relPattern of relPatterns) {
         const href = this.extractLinkHref(html, relPattern);
         if (href) {
           const faviconUrl = this.resolveUrl(this.decodeHtmlEntities(href), parsedUrl);
-          console.log("Found", faviconUrl);
           return { url: faviconUrl, source: 'html' };
         }
       }
@@ -111,7 +110,7 @@ export class FaviconFetcher {
   }
 
   private static extractLinkHref(html: string, relPattern: RegExp): string | null {
-    const linkTagRegex = /<link[^>]+>/gi;
+    const linkTagRegex = /<link[\s\S]*?>/gi;
     let tagMatch;
     while ((tagMatch = linkTagRegex.exec(html)) !== null) {
       const tag = tagMatch[0];

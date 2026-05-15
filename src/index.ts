@@ -17,29 +17,31 @@ export default {
         return new Response('Missing url parameter', { status: 400 });
       }
 
+      const cache = caches.default;
+      const cached = await cache.match(request);
+      if (cached) return cached;
+
       try {
-        // Get favicon URL
         const faviconResult = await FaviconFetcher.getFavicon(targetUrl);
 
-        if (!faviconResult) {
-          // Redirect to not found SVG
-          return new Response(null, {
-          status: 302,
-          headers: {
-            'Location': `${url.origin}/notfound.svg`,
-            'Cache-Control': 'public, max-age=1,209,600', // Cache the redirect for 14 days
-          }
-        });
-        }
+        const response = faviconResult
+          ? new Response(null, {
+              status: 302,
+              headers: {
+                'Location': faviconResult.url,
+                'Cache-Control': 'public, max-age=31536000',
+              },
+            })
+          : new Response(null, {
+              status: 302,
+              headers: {
+                'Location': `${url.origin}/notfound.svg`,
+                'Cache-Control': 'public, max-age=1209600',
+              },
+            });
 
-        // Redirect to the discovered favicon URL with cache headers
-        return new Response(null, {
-          status: 302,
-          headers: {
-            'Location': faviconResult.url,
-            'Cache-Control': 'public, max-age=31,536,000', // Cache the redirect for 365 days
-          }
-        });
+        await cache.put(request, response.clone());
+        return response;
 
       } catch (error) {
         console.error('Error:', error);
@@ -51,7 +53,7 @@ export default {
       return new Response(defaultSvg, {
         headers: {
           'Content-Type': 'image/svg+xml',
-          'Cache-Control': 'public, max-age=31,536,000' // 365 days
+          'Cache-Control': 'public, max-age=31536000',
         }
       });
     }

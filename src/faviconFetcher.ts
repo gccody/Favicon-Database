@@ -88,22 +88,18 @@ export class FaviconFetcher {
       const html = await response.text();
       const parsedUrl = new URL(url);
 
-      // Simple regex to find favicon links
-      const faviconSelectors = [
-        /<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["'][^>]*>/gi,
-        /<link[^>]*rel=["']apple-touch-icon["'][^>]*href=["']([^"']+)["'][^>]*>/gi,
-        /<link[^>]*rel=["']apple-touch-icon-precomposed["'][^>]*href=["']([^"']+)["'][^>]*>/gi
+      const relPatterns = [
+        /rel=["'](?:shortcut )?icon["']/i,
+        /rel=["']apple-touch-icon["']/i,
+        /rel=["']apple-touch-icon-precomposed["']/i,
       ];
 
-      for (const regex of faviconSelectors) {
-        const match = regex.exec(html);
-        if (match && match[1]) {
-          const href = match[1];
-          const faviconUrl = this.resolveUrl(href, parsedUrl);
-          return {
-            url: faviconUrl,
-            source: 'html'
-          };
+      for (const relPattern of relPatterns) {
+        const href = this.extractLinkHref(html, relPattern);
+        if (href) {
+          const faviconUrl = this.resolveUrl(this.decodeHtmlEntities(href), parsedUrl);
+          console.log("Found", faviconUrl);
+          return { url: faviconUrl, source: 'html' };
         }
       }
 
@@ -112,6 +108,30 @@ export class FaviconFetcher {
       console.error('Error scraping HTML for favicon:', error);
       return null;
     }
+  }
+
+  private static extractLinkHref(html: string, relPattern: RegExp): string | null {
+    const linkTagRegex = /<link[^>]+>/gi;
+    let tagMatch;
+    while ((tagMatch = linkTagRegex.exec(html)) !== null) {
+      const tag = tagMatch[0];
+      if (relPattern.test(tag)) {
+        const hrefMatch = tag.match(/href=["']([^"']+)["']/i);
+        if (hrefMatch) return hrefMatch[1];
+      }
+    }
+    return null;
+  }
+
+  private static decodeHtmlEntities(str: string): string {
+    return str.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+              .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#39;/g, "'")
+              .replace(/&apos;/g, "'");
   }
 
   private static resolveUrl(href: string, baseUrl: URL): string {

@@ -11,16 +11,13 @@ export class FaviconFetcher {
       if (this.isLocalIP(parsedUrl.hostname)) {
         return this.getDefaultFavicon();
       }
-      // Try direct favicon.ico first
-      const directFavicon = await this.tryDirectFavicon(url);
-      if (directFavicon) {
-        return directFavicon;
-      }
+      const [directFavicon, htmlFavicon] = await Promise.all([
+        this.tryDirectFavicon(url),
+        this.scrapeHtmlForFavicon(url),
+      ]);
 
-      // If direct favicon fails, try scraping HTML for favicon links
-      const htmlFavicon = await this.scrapeHtmlForFavicon(url);
-      if (htmlFavicon) {
-        return htmlFavicon;
+      if (directFavicon ?? htmlFavicon) {
+        return directFavicon ?? htmlFavicon;
       }
 
       const hostnameParts = parsedUrl.hostname.split('.');
@@ -85,7 +82,9 @@ export class FaviconFetcher {
         return null;
       }
 
-      const html = await response.text();
+      const fullHtml = await response.text();
+      const headEnd = fullHtml.toLowerCase().indexOf('</head>');
+      const html = headEnd !== -1 ? fullHtml.slice(0, headEnd + 7) : fullHtml;
       const parsedUrl = new URL(url);
 
       const relPatterns = [
@@ -135,17 +134,8 @@ export class FaviconFetcher {
 
   private static resolveUrl(href: string, baseUrl: URL): string {
     try {
-      if (href.startsWith('http://') || href.startsWith('https://')) {
-        return href;
-      }
-      if (href.startsWith('//')) {
-        return `${baseUrl.protocol}${href}`;
-      }
-      if (href.startsWith('/')) {
-        return `${baseUrl.origin}${href}`;
-      }
-      return `${baseUrl.origin}/${href}`;
-    } catch (error) {
+      return new URL(href, baseUrl).toString();
+    } catch {
       return href;
     }
   }
